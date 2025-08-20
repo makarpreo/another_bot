@@ -1,11 +1,8 @@
-import telebot
-import config  # модуль с конфигурационными данными (токен бота и т.д.)
-from telebot.types import (
-    InlineKeyboardMarkup, InlineKeyboardButton,
-    ReplyKeyboardMarkup
-)
-from main import Car, Note
 import re
+import telebot
+from telebot.types import ReplyKeyboardMarkup
+import config  # модуль с конфигурационными данными (токен бота и т.д.)
+from main import Car, Note
 
 # Инициализация бота
 bot = telebot.TeleBot(config.TOKEN)
@@ -18,6 +15,7 @@ def ask_id(message):
         message.chat.id,
         "Напишите ID машины с которой вы будете взаимодействовать:",
     )
+
 
 def set_id(message):
     user_data['current_car_id'] = message.text
@@ -34,6 +32,7 @@ def init_car_command(message):
     )
     bot.register_next_step_handler(message, add_car)
 
+
 def add_car(message):
     car = Car()
     if re.match(r'^/', message.text):
@@ -47,6 +46,7 @@ def add_car(message):
         message.chat.id,
         result
     )
+
 
 @bot.message_handler(commands=['delete_car'])
 def delete_car(message):
@@ -65,26 +65,37 @@ def ask_note(message):
     )
     bot.register_next_step_handler(message, add_note_to_car)
 
+
 def add_note_to_car(message):
     note = Note()
     result = note.add_note(note_text=message.text, car_id=user_data['current_car_id'])
     bot.send_message(message.chat.id, result)
 
-# @bot.message_handler(commands=['show_car_list'])
-# def show_car_command(message):
-#     markup = ReplyKeyboardMarkup()
-#     bot.send_message(
-#         message.chat.id,
-#         "список активных машин:",
-#         reply_markup=markup
-#     )
+
+@bot.message_handler(commands=['show_car_list'])
+def show_car_command(message):
+    car = Car()
+    results = car.show_active_list()
+    markup = ReplyKeyboardMarkup()
+    bot.send_message(
+        message.chat.id,
+        "список активных машин:",
+        reply_markup=markup
+    )
+    for row in results:
+        bot.send_message(
+            message.chat.id,
+            *row,
+            reply_markup=markup
+        )
+
 
 @bot.message_handler(commands=['print_notes'])
 def print_notes_for_car(message):
     car = Car()
     result = car.print_note(user_data['current_car_id'])
     for row in result:
-       bot.send_message(message.chat.id, row)
+        bot.send_message(message.chat.id, row)
 
 
 # Запуск бота

@@ -1,7 +1,6 @@
 import mysql.connector
 from mysql.connector import Error
 from config import *
-# Конфигурация подключения к MySQL
 
 
 class Table:
@@ -71,6 +70,26 @@ class Car(Table):
                 return f"Машина '{car_name}' успешно добавлена"
         except Exception as ex:
             return f'Ошибка при добавлении машины: {ex}'
+        finally:
+            if conn and conn.is_connected():
+                cursor.close()
+                conn.close()
+
+    def show_active_list(self):
+        try:
+            conn = self.get_db_connection()
+            if conn and conn.is_connected():
+                cursor = conn.cursor()
+                query = 'SELECT * FROM cars WHERE car_status="active";'
+                cursor.execute(query)
+                results = cursor.fetchall()
+                if results:
+                    if conn and conn.is_connected():
+                        cursor.close()
+                        conn.close()
+                    return results
+        except Exception as ex:
+            return f'Ошибка при удалении машины: {ex}'
         finally:
             if conn and conn.is_connected():
                 cursor.close()
@@ -165,6 +184,7 @@ class Car(Table):
                 cursor.close()
                 conn.close()
 
+
 class Note(Table):
     """Класс для работы с таблицей notes"""
 
@@ -221,32 +241,8 @@ class Note(Table):
                 cursor.close()
                 conn.close()
 
-
 # Пример использования
-if __name__ == '__main__':
-    cars = Car()
-    notes = Note()
-    cars.print_note(1)
-    # print(cars.return_id(car_name='1'))
-    # # # Добавление машин
-    # cars.add_car("Toyota")
-    # cars.add_car("Nissan")
-    # cars.change_car_status(car_status='not active', car_id=5)
-
-    # # Вывод всех машин
-    # cars.print_rows()
-    #
-    # # Добавление заметок
-    # notes.add_note("Нужно поменять масло", 1)
-    # notes.add_note("Проверить тормоза", 2)
-    #
-    # # Вывод всех заметок с именами машин
-    # notes.print_notes_with_cars()
-    #
-    # # Удаление машины (заметки удалятся каскадно)
-    # cars.delete_car(9)
-    # cars.delete_car(10)
-    #
-    # # Проверка результатов
-    # cars.print_rows()
-    # notes.print_rows()
+# if __name__ == '__main__':
+#     cars = Car()
+#     notes = Note()
+#     print('succes')
