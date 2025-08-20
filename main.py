@@ -1,0 +1,252 @@
+import mysql.connector
+from mysql.connector import Error
+from config import *
+# Конфигурация подключения к MySQL
+
+
+class Table:
+    """Родительский класс для работы с таблицами БД"""
+
+    def __init__(self, table_name):
+        self.table_name = table_name
+
+    @staticmethod
+    def get_db_connection():
+        """Создает и возвращает соединение с MySQL"""
+        try:
+            conn = mysql.connector.connect(**DB_CONFIG)
+            return conn
+        except Error as e:
+            print(f"Ошибка подключения к MySQL: {e}")
+            return None
+
+    @staticmethod
+    def print_row(row):
+        """Форматированный вывод строки"""
+        print('| ' + ' | '.join(list(map(str, row))) + ' |')
+
+    def print_rows(self):
+        """Выводит все строки таблицы"""
+        try:
+            conn = self.get_db_connection()
+            if conn and conn.is_connected():
+                cursor = conn.cursor()
+                query = f'SELECT * FROM {self.table_name};'
+                cursor.execute(query)
+                results = cursor.fetchall()
+
+                if results:
+                    for row in results:
+                        self.print_row(row)
+                else:
+                    print(f"Таблица {self.table_name} пуста")
+        except Exception as ex:
+            print(f'Ошибка при выводе данных: {ex}')
+        finally:
+            if conn and conn.is_connected():
+                cursor.close()
+                conn.close()
+
+
+class Car(Table):
+    """Класс для работы с таблицей cars"""
+
+    def __init__(self):
+        super().__init__('cars')
+
+    def add_car(self, car_name):
+        """Добавляет новую машину"""
+        conn = self.get_db_connection()
+        try:
+            if conn and conn.is_connected():
+                cursor = conn.cursor()
+                query = "SELECT COUNT(*) FROM cars WHERE car_name = %s"
+                cursor.execute(query, (car_name,))
+                result = cursor.fetchone()
+                if result[0] > 0:
+                    return f'Ошибка при добавлении машины: машина с таким названием уже существует'
+                query = 'INSERT INTO cars (car_name, car_status) VALUES (%s, "active");'
+                cursor.execute(query, (car_name,))
+                conn.commit()
+                return f"Машина '{car_name}' успешно добавлена"
+        except Exception as ex:
+            return f'Ошибка при добавлении машины: {ex}'
+        finally:
+            if conn and conn.is_connected():
+                cursor.close()
+                conn.close()
+
+    def delete_car_by_id(self, car_id):
+        """Удаляет машину по ID"""
+        try:
+            conn = self.get_db_connection()
+            if conn and conn.is_connected():
+                cursor = conn.cursor()
+                query = 'DELETE FROM cars WHERE car_id = %s;'
+                cursor.execute(query, (car_id,))
+                conn.commit()
+                return f"Машина с ID {car_id} удалена"
+        except Exception as ex:
+            return f'Ошибка при удалении машины: {ex}'
+        finally:
+            if conn and conn.is_connected():
+                cursor.close()
+                conn.close()
+
+    def delete_car_by_name(self, car_name):
+        """Удаляет машину по ID"""
+        try:
+            conn = self.get_db_connection()
+            if conn and conn.is_connected():
+                cursor = conn.cursor()
+                query = 'DELETE FROM cars WHERE car_name = %s;'
+                cursor.execute(query, (car_name,))
+                conn.commit()
+                return f"Машина с ID {car_name} удалена"
+        except Exception as ex:
+            return f'Ошибка при удалении машины: {ex}'
+        finally:
+            if conn and conn.is_connected():
+                cursor.close()
+                conn.close()
+
+    def return_id(self, car_name):
+        try:
+            conn = self.get_db_connection()
+            if conn.is_connected():
+                cursor = conn.cursor()
+                query = f'select car_id from cars where car_name="{car_name}" AND car_status="active";'
+                cursor.execute(query)
+                result = cursor.fetchall()
+                if result:
+                    return result[0][0]
+                else:
+                    return 'Нет активных машин с таким названием'
+        except Exception as ex:
+            print(f'была ошибка: {ex}')
+        finally:
+            conn.close()
+
+    def print_note(self, car_id):
+        """Добавляет новую заметку"""
+        try:
+            conn = self.get_db_connection()
+            if conn and conn.is_connected():
+                cursor = conn.cursor()
+                query = f'select note, car_id, car_name from notes join cars using(car_id) where car_id={car_id};'
+                cursor.execute(query)
+                results = cursor.fetchall()
+                if results:
+                    if conn and conn.is_connected():
+                        cursor.close()
+                        conn.close()
+                    return results
+                return f"Заметка для машины с ID {car_id} добавлена"
+        except Exception as ex:
+            print(f'Ошибка при добавлении заметки: {ex}')
+        finally:
+            if conn and conn.is_connected():
+                cursor.close()
+                conn.close()
+
+    def change_car_status(self, car_status, car_id):
+        try:
+            conn = self.get_db_connection()
+            if conn and conn.is_connected():
+                cursor = conn.cursor()
+                query = f'UPDATE cars SET car_status = "{car_status}" WHERE car_id = {car_id};'
+                cursor.execute(query)
+                conn.commit()
+                return f'статус car_id:{car_id} изменен на: {car_status}'
+        except Exception as ex:
+            print(f'Ошибка при изменении статуса: {ex}')
+        finally:
+            if conn and conn.is_connected():
+                cursor.close()
+                conn.close()
+
+class Note(Table):
+    """Класс для работы с таблицей notes"""
+
+    def __init__(self):
+        super().__init__('notes')
+
+    def add_note(self, note_text, car_id):
+        """Добавляет новую заметку"""
+        try:
+            conn = self.get_db_connection()
+            if conn and conn.is_connected():
+                cursor = conn.cursor()
+                query = 'INSERT INTO notes (note, car_id) VALUES (%s, %s);'
+                cursor.execute(query, (note_text, car_id))
+                conn.commit()
+                if conn and conn.is_connected():
+                    cursor.close()
+                    conn.close()
+                return f"Заметка для машины с ID {car_id} добавлена"
+        except Exception as ex:
+            print(f'Ошибка при добавлении заметки: {ex}')
+        finally:
+            if conn and conn.is_connected():
+                cursor.close()
+                conn.close()
+
+    def print_notes_with_cars(self):
+        """Выводит заметки с именами машин"""
+        try:
+            conn = self.get_db_connection()
+            if conn and conn.is_connected():
+                cursor = conn.cursor()
+                query = '''
+                SELECT notes.note_id, notes.note, cars.car_name 
+                FROM notes 
+                JOIN cars ON notes.car_id = cars.car_id;
+                '''
+                cursor.execute(query)
+                results = cursor.fetchall()
+                if results:
+                    if conn and conn.is_connected():
+                        cursor.close()
+                        conn.close()
+                    return results
+                    # print("\nЗаметки с именами машин:")
+                    # for row in results:
+                    #     self.print_row(row)
+                else:
+                    print("Нет заметок для отображения")
+        except Exception as ex:
+            print(f'Ошибка при выводе заметок: {ex}')
+        finally:
+            if conn and conn.is_connected():
+                cursor.close()
+                conn.close()
+
+
+# Пример использования
+if __name__ == '__main__':
+    cars = Car()
+    notes = Note()
+    cars.print_note(1)
+    # print(cars.return_id(car_name='1'))
+    # # # Добавление машин
+    # cars.add_car("Toyota")
+    # cars.add_car("Nissan")
+    # cars.change_car_status(car_status='not active', car_id=5)
+
+    # # Вывод всех машин
+    # cars.print_rows()
+    #
+    # # Добавление заметок
+    # notes.add_note("Нужно поменять масло", 1)
+    # notes.add_note("Проверить тормоза", 2)
+    #
+    # # Вывод всех заметок с именами машин
+    # notes.print_notes_with_cars()
+    #
+    # # Удаление машины (заметки удалятся каскадно)
+    # cars.delete_car(9)
+    # cars.delete_car(10)
+    #
+    # # Проверка результатов
+    # cars.print_rows()
+    # notes.print_rows()

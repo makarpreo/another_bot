@@ -1,0 +1,21 @@
+# created by virtualenv automatically
+__pycache__/
+*.pyc
+*.pyo
+.env
+venv/
+.venv
+config.py
+old_v.py
+chat_gpt_v.py
+# Базы данных
+*.db
+*.sqlite
+
+# Логи
+*.log
+попытки change_status.txt
+# IDE
+.vscode/
+.idea/
+.idea/*
