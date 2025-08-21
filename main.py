@@ -83,6 +83,7 @@ class Car(Table):
                 query = 'SELECT * FROM cars WHERE car_status="active";'
                 cursor.execute(query)
                 results = cursor.fetchall()
+                print(results)
                 if results:
                     if conn and conn.is_connected():
                         cursor.close()
@@ -129,22 +130,22 @@ class Car(Table):
                 cursor.close()
                 conn.close()
 
-    def return_id(self, car_name):
-        try:
-            conn = self.get_db_connection()
-            if conn.is_connected():
-                cursor = conn.cursor()
-                query = f'select car_id from cars where car_name="{car_name}" AND car_status="active";'
-                cursor.execute(query)
-                result = cursor.fetchall()
-                if result:
-                    return result[0][0]
-                else:
-                    return 'Нет активных машин с таким названием'
-        except Exception as ex:
-            print(f'была ошибка: {ex}')
-        finally:
-            conn.close()
+    # def return_id(self, car_name):
+    #     try:
+    #         conn = self.get_db_connection()
+    #         if conn.is_connected():
+    #             cursor = conn.cursor()
+    #             query = select car_id from cars where car_name="{car_name}" AND car_status="active";'
+    #             cursor.execute(query)
+    #             result = cursor.fetchall()
+    #             if result:
+    #                 return result[0][0]
+    #             else:
+    #                 return 'Нет активных машин с таким названием'
+    #     except Exception as ex:
+    #         print(f'была ошибка: {ex}')
+    #     finally:
+    #         conn.close()
 
     def print_note(self, car_id):
         """Добавляет новую заметку"""
@@ -152,15 +153,15 @@ class Car(Table):
             conn = self.get_db_connection()
             if conn and conn.is_connected():
                 cursor = conn.cursor()
-                query = f'select note, car_id, car_name from notes join cars using(car_id) where car_id={car_id};'
+                query = f'select note from notes join cars using(car_id) where car_id={car_id};'
                 cursor.execute(query)
                 results = cursor.fetchall()
+                print(results)
                 if results:
                     if conn and conn.is_connected():
                         cursor.close()
                         conn.close()
                     return results
-                return f"Заметка для машины с ID {car_id} добавлена"
         except Exception as ex:
             print(f'Ошибка при добавлении заметки: {ex}')
         finally:
@@ -242,7 +243,9 @@ class Note(Table):
                 conn.close()
 
 # Пример использования
-# if __name__ == '__main__':
-#     cars = Car()
-#     notes = Note()
-#     print('succes')
+if __name__ == '__main__':
+    cars = Car()
+    notes = Note()
+    cars.print_note(7)
+    cars.show_active_list()
+    print('success')
