@@ -130,6 +130,24 @@ class Car(Table):
                 cursor.close()
                 conn.close()
 
+    def get_car_name(self, car_id):
+        try:
+            conn = self.get_db_connection()
+            if conn and conn.is_connected():
+                cursor = conn.cursor()
+                query = f'SELECT car_name FROM cars WHERE car_id={car_id};'
+                cursor.execute(query)
+                name = cursor.fetchone()
+                if name:
+                    return name[0]
+                return 'ошибка, нет машины с таким id'
+        except Exception as ex:
+            return f'Ошибка: {ex}'
+        finally:
+            if conn and conn.is_connected():
+                cursor.close()
+                conn.close()
+
     # def return_id(self, car_name):
     #     try:
     #         conn = self.get_db_connection()
@@ -153,7 +171,7 @@ class Car(Table):
             conn = self.get_db_connection()
             if conn and conn.is_connected():
                 cursor = conn.cursor()
-                query = f'select note from notes join cars using(car_id) where car_id={car_id};'
+                query = f'select note, user_id from notes join cars using(car_id) where car_id={car_id};'
                 cursor.execute(query)
                 results = cursor.fetchall()
                 print(results)
@@ -192,14 +210,14 @@ class Note(Table):
     def __init__(self):
         super().__init__('notes')
 
-    def add_note(self, note_text, car_id):
+    def add_note(self, note_text, car_id, user_id):
         """Добавляет новую заметку"""
         try:
             conn = self.get_db_connection()
             if conn and conn.is_connected():
                 cursor = conn.cursor()
-                query = 'INSERT INTO notes (note, car_id) VALUES (%s, %s);'
-                cursor.execute(query, (note_text, car_id))
+                query = 'INSERT INTO notes (note, car_id, user_id) VALUES (%s, %s, %s);'
+                cursor.execute(query, (note_text, car_id, user_id))
                 conn.commit()
                 if conn and conn.is_connected():
                     cursor.close()
@@ -246,6 +264,6 @@ class Note(Table):
 if __name__ == '__main__':
     cars = Car()
     notes = Note()
-    cars.print_note(7)
-    cars.show_active_list()
+    # cars.print_note(7)
+    # cars.show_active_list()
     print('success')
