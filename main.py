@@ -1,3 +1,5 @@
+import datetime
+
 import mysql.connector
 from mysql.connector import Error
 from config import *
@@ -174,28 +176,30 @@ class Car(Table):
                 query = f'select note, user_id from notes join cars using(car_id) where car_id={car_id};'
                 cursor.execute(query)
                 results = cursor.fetchall()
-                print(results)
                 if results:
                     if conn and conn.is_connected():
                         cursor.close()
                         conn.close()
                     return results
         except Exception as ex:
-            print(f'Ошибка при добавлении заметки: {ex}')
+            return f'Ошибка при добавлении заметки: {ex}'
         finally:
             if conn and conn.is_connected():
                 cursor.close()
                 conn.close()
 
-    def change_car_status(self, car_status, car_id):
+    def move_car_to_archive(self, car_id):
         try:
             conn = self.get_db_connection()
             if conn and conn.is_connected():
                 cursor = conn.cursor()
-                query = f'UPDATE cars SET car_status = "{car_status}" WHERE car_id = {car_id};'
+                query = f'UPDATE cars SET car_status="not active" WHERE car_id = {car_id};'
                 cursor.execute(query)
                 conn.commit()
-                return f'статус car_id:{car_id} изменен на: {car_status}'
+                query = f'INSERT INTO archive (car_id, archive_date) VALUES ({car_id}, NOW())'
+                cursor.execute(query)
+                conn.commit()
+                return f'машина ID:{car_id} перемещена в архив'
         except Exception as ex:
             print(f'Ошибка при изменении статуса: {ex}')
         finally:
@@ -203,6 +207,62 @@ class Car(Table):
                 cursor.close()
                 conn.close()
 
+    def do_car_active_again(self, car_id):
+        try:
+            conn = self.get_db_connection()
+            if conn and conn.is_connected():
+                cursor = conn.cursor()
+                query = f'UPDATE cars SET car_status="active" WHERE car_id = {car_id};'
+                cursor.execute(query)
+                conn.commit()
+                return f'машина ID:{car_id} снова активна'
+        except Exception as ex:
+            print(f'Ошибка при изменении статуса: {ex}')
+        finally:
+            if conn and conn.is_connected():
+                cursor.close()
+                conn.close()
+
+    def show_not_active_list(self):
+        try:
+            conn = self.get_db_connection()
+            if conn and conn.is_connected():
+                cursor = conn.cursor()
+                query = 'SELECT * FROM cars WHERE car_status="not active";'
+                cursor.execute(query)
+                results = cursor.fetchall()
+                print(results)
+                if results:
+                    if conn and conn.is_connected():
+                        cursor.close()
+                        conn.close()
+                    return results
+        except Exception as ex:
+            return f'Ошибка при удалении машины: {ex}'
+        finally:
+            if conn and conn.is_connected():
+                cursor.close()
+                conn.close()
+
+    def archive_car_info(self, car_id):
+        try:
+            conn = self.get_db_connection()
+            if conn and conn.is_connected():
+                cursor = conn.cursor()
+                query = f'select car_name, archive_date from archive join cars using(car_id) where car_id={car_id};'
+                cursor.execute(query)
+                results = cursor.fetchall()
+                if results:
+                    if conn and conn.is_connected():
+                        cursor.close()
+                        conn.close()
+                    return format_datetime_list(results)
+        except Exception as ex:
+            return f'Ошибка при добавлении заметки: {ex}'
+        finally:
+            if conn and conn.is_connected():
+                cursor.close()
+                conn.close()
 
 class Note(Table):
     """Класс для работы с таблицей notes"""
@@ -260,10 +320,53 @@ class Note(Table):
                 cursor.close()
                 conn.close()
 
+#select car_id, car_name, archive_date from archive join cars using(car_id) where car_id=;
+def format_datetime_list(data:  list[tuple[str, datetime]],
+                         name_header: str = "Машина",
+                         date_header: str = "Дата",
+                         date_format: str = '%Y-%m-%d %H:%M:%S') -> str:
+    """
+    Форматирует список кортежей (имя, datetime) в красивую строку
+
+    Args:
+        data: Список кортежей [(name, datetime), ...]
+        name_header: Заголовок для колонки с именами
+        date_header: Заголовок для колонки с датами
+        date_format: Формат даты (по умолчанию: 'YYYY-MM-DD HH:MM:SS')
+
+    Returns:
+        Красиво отформатированная строка
+    """
+    if not data:
+        return "Нет данных для отображения"
+
+    # Определяем максимальную длину имени для красивого выравнивания
+    max_name_len = max(len(str(name)) for name, _ in data)
+    max_name_len = max(max_name_len, len(name_header))
+
+    # Создаем заголовок
+    header = f"{name_header:<{max_name_len}} | {date_header}"
+    # Создаем строки с данными
+    rows = []
+    for name, dt in data:
+        if isinstance(dt, datetime.datetime):
+            formatted_date = dt.strftime(date_format)
+        else:
+            formatted_date = str(dt)
+        rows.append(f"{str(name):<{max_name_len}} | {formatted_date}")
+
+    return "\n".join([header] + rows)
 # Пример использования
 if __name__ == '__main__':
-    cars = Car()
-    notes = Note()
+    car = Car()
+    # note = Note()
+    # car.add_car('test_archive_2')
+    print(car.archive_car_info(21))
+    # car.move_car_to_archive(21)
+    # car.do_car_active_again(21)
+    # car.show_not_active_list()
+    # car.move_car_to_archive(19)
+    # car.show_not_active_list()
     # cars.print_note(7)
     # cars.show_active_list()
     print('success')

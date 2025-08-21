@@ -14,6 +14,7 @@ chat_gpt_v.py
 *.txt
 !requirements.txt
 # Логи
+admin.py
 *.log
 попытки change_status.txt
 # IDE
