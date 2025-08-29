@@ -77,6 +77,27 @@ class Car(Table):
                 cursor.close()
                 conn.close()
 
+    def print_notes_for_car(self):
+        try:
+            conn = self.get_db_connection()
+            if conn and conn.is_connected():
+                cursor = conn.cursor()
+                query = 'SELECT * FROM cars WHERE car_status="active";'
+                cursor.execute(query)
+                results = cursor.fetchall()
+                print(results)
+                if results:
+                    if conn and conn.is_connected():
+                        cursor.close()
+                        conn.close()
+                    return results
+        except Exception as ex:
+            return f'Ошибка при удалении машины: {ex}'
+        finally:
+            if conn and conn.is_connected():
+                cursor.close()
+                conn.close()
+
     def show_active_list(self):
         try:
             conn = self.get_db_connection()
@@ -264,6 +285,7 @@ class Car(Table):
                 cursor.close()
                 conn.close()
 
+
 class Note(Table):
     """Класс для работы с таблицей notes"""
 
@@ -320,8 +342,9 @@ class Note(Table):
                 cursor.close()
                 conn.close()
 
-#select car_id, car_name, archive_date from archive join cars using(car_id) where car_id=;
-def format_datetime_list(data:  list[tuple[str, datetime]],
+
+# select car_id, car_name, archive_date from archive join cars using(car_id) where car_id=;
+def format_datetime_list(data: list[tuple[str, datetime]],
                          name_header: str = "Машина",
                          date_header: str = "Дата",
                          date_format: str = '%Y-%m-%d %H:%M:%S') -> str:
@@ -356,6 +379,8 @@ def format_datetime_list(data:  list[tuple[str, datetime]],
         rows.append(f"{str(name):<{max_name_len}} | {formatted_date}")
 
     return "\n".join([header] + rows)
+
+
 # Пример использования
 if __name__ == '__main__':
     car = Car()

@@ -138,6 +138,7 @@ def handle_command_callback(call):
     # Подтверждаем нажатие кнопки
     # bot.answer_callback_query(call.id, f"Выполняется: {command}")
 
+
 @bot.callback_query_handler(func=lambda call: call.data.startswith('select_car:'))
 def handle_car_selection(call):
     """Обработчик выбора машины из списка"""
@@ -164,6 +165,7 @@ def handle_car_selection(call):
     # Подтверждаем нажатие
     # bot.answer_callback_query(call.id, f"Выбрана машина: {car_name}")
     print_notes_for_car()
+
 
 def select_car_from_list(message):
     """Показать список машин для выбора"""
@@ -210,11 +212,13 @@ def select_car_from_list(message):
         reply_markup=markup
     )
 
+
 @bot.callback_query_handler(func=lambda call: call.data == 'do_car_active_again')
 def do_car_active_again():
     car = Car()
     result = car.do_car_active_again(user_data['current_car_id'])
     bot.send_message(user_data['chat_id'], result)
+
 
 @bot.callback_query_handler(func=lambda call: call.data == 'car_to_archive')
 def confirm_car_to_archive(call):
@@ -223,6 +227,7 @@ def confirm_car_to_archive(call):
         "Введите 'Подтвердить', если хотите перенести машину в архив",
     )
     bot.register_next_step_handler(call.message, car_to_archive)
+
 
 def car_to_archive(message):
     if message.text == 'Подтвердить':
@@ -233,6 +238,7 @@ def car_to_archive(message):
         markup = InlineKeyboardMarkup()
         markup.add(types.InlineKeyboardButton(text="🔢 Выбрать машину", callback_data="command:/select_car"))
         bot.send_message(message.chat.id, f'Вы отменили перемещение в архив машины ID:{user_data["current_car_id"]}')
+
 
 #
 # @bot.callback_query_handler(func=lambda call: call.data.startswith('select_archive_car:'))
@@ -307,12 +313,14 @@ def select_archive_car_from_list(message):
         reply_markup=markup
     )
 
+
 @bot.callback_query_handler(func=lambda call: call.data.startswith('select_archive_car:'))
 def handle_car_selection(call):
     """Обработчик выбора машины из списка"""
     chat_id = call.message.chat.id
     markup = InlineKeyboardMarkup()
-    markup.add(types.InlineKeyboardButton(text="⚡Сделать машину снова активной", callback_data="command:/do_car_active_again"))
+    markup.add(
+        types.InlineKeyboardButton(text="⚡Сделать машину снова активной", callback_data="command:/do_car_active_again"))
     # Извлекаем ID машины из callback_data
     car_id = int(call.data.split(':')[1])
 
@@ -475,6 +483,7 @@ def print_notes_for_car():
         prev_i = i
     bot.send_message(user_data['chat_id'], summary)
 
+
 def print_notes_for_archive_car():
     car = Car()
     archive_result = car.archive_car_info(user_data['current_car_id'])
@@ -498,7 +507,8 @@ def print_notes_for_archive_car():
         prev_i = i
     bot.send_message(user_data['chat_id'], summary)
 
+
 # Запуск бота
 if __name__ == '__main__':
     print("Бот запущен!")
-    bot.infinity_polling()
+    bot.infinity_polling(timeout=10, long_polling_timeout=5)
