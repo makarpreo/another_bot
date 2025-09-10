@@ -1,5 +1,3 @@
-import datetime
-
 import mysql.connector
 from mysql.connector import Error
 from config import *
@@ -77,12 +75,61 @@ class Car(Table):
                 cursor.close()
                 conn.close()
 
+    def edit_last_note(self, username, car_id, text):
+        # select * from notes where car_id=15 AND user_id='makarpreo' order by 1 desc LIMIT 1;
+        try:
+            conn = self.get_db_connection()
+            if conn and conn.is_connected():
+                cursor = conn.cursor()
+                print(car_id, username)
+                query = f'select note_id from notes where car_id={car_id} AND user_id="{username}" order by 1 desc LIMIT 1;'
+                print(query)
+                cursor.execute(query)
+                note_id = cursor.fetchone()
+                query = f'UPDATE notes SET note="{text}" WHERE note_id={note_id[0]};'
+                print(query)
+                cursor.execute(query)
+                conn.commit()
+                # print(results)
+                # if results:
+                #     if conn and conn.is_connected():
+                #         cursor.close()
+                #         conn.close()
+                #     return results
+        except Exception as ex:
+            return f'Ошибка при удалении машины: {ex}'
+        finally:
+            if conn and conn.is_connected():
+                cursor.close()
+                conn.close()
+
     def show_active_list(self):
         try:
             conn = self.get_db_connection()
             if conn and conn.is_connected():
                 cursor = conn.cursor()
                 query = 'SELECT * FROM cars WHERE car_status="active";'
+                cursor.execute(query)
+                results = cursor.fetchall()
+                print(results)
+                if results:
+                    if conn and conn.is_connected():
+                        cursor.close()
+                        conn.close()
+                    return results
+        except Exception as ex:
+            return f'Ошибка при удалении машины: {ex}'
+        finally:
+            if conn and conn.is_connected():
+                cursor.close()
+                conn.close()
+
+    def show_not_active_list(self):
+        try:
+            conn = self.get_db_connection()
+            if conn and conn.is_connected():
+                cursor = conn.cursor()
+                query = 'SELECT * FROM cars WHERE car_status="not active";'
                 cursor.execute(query)
                 results = cursor.fetchall()
                 print(results)
@@ -142,7 +189,8 @@ class Car(Table):
                 name = cursor.fetchone()
                 if name:
                     return name[0]
-                return 'ошибка, нет машины с таким id'
+                print(123123123)
+                return ''
         except Exception as ex:
             return f'Ошибка: {ex}'
         finally:
@@ -176,13 +224,30 @@ class Car(Table):
                 query = f'select note, user_id from notes join cars using(car_id) where car_id={car_id};'
                 cursor.execute(query)
                 results = cursor.fetchall()
+                print(results)
                 if results:
                     if conn and conn.is_connected():
                         cursor.close()
                         conn.close()
                     return results
         except Exception as ex:
-            return f'Ошибка при добавлении заметки: {ex}'
+            print(f'Ошибка при добавлении заметки: {ex}')
+        finally:
+            if conn and conn.is_connected():
+                cursor.close()
+                conn.close()
+
+    def change_car_status(self, car_status, car_id):
+        try:
+            conn = self.get_db_connection()
+            if conn and conn.is_connected():
+                cursor = conn.cursor()
+                query = f'UPDATE cars SET car_status = "{car_status}" WHERE car_id = {car_id};'
+                cursor.execute(query)
+                conn.commit()
+                return f'статус car_id:{car_id} изменен на: {car_status}'
+        except Exception as ex:
+            print(f'Ошибка при изменении статуса: {ex}')
         finally:
             if conn and conn.is_connected():
                 cursor.close()
@@ -207,15 +272,16 @@ class Car(Table):
                 cursor.close()
                 conn.close()
 
+
     def do_car_active_again(self, car_id):
         try:
             conn = self.get_db_connection()
             if conn and conn.is_connected():
                 cursor = conn.cursor()
-                query = f'UPDATE cars SET car_status="active" WHERE car_id = {car_id};'
+                query = f'UPDATE cars SET car_status = "active" WHERE car_id = {car_id};'
                 cursor.execute(query)
                 conn.commit()
-                return f'машина ID:{car_id} снова активна'
+                return f'статус car_id:{car_id} изменен на: active'
         except Exception as ex:
             print(f'Ошибка при изменении статуса: {ex}')
         finally:
@@ -223,52 +289,65 @@ class Car(Table):
                 cursor.close()
                 conn.close()
 
-    def show_not_active_list(self):
-        try:
-            conn = self.get_db_connection()
-            if conn and conn.is_connected():
-                cursor = conn.cursor()
-                query = 'SELECT * FROM cars WHERE car_status="not active";'
-                cursor.execute(query)
-                results = cursor.fetchall()
-                print(results)
-                if results:
-                    if conn and conn.is_connected():
-                        cursor.close()
-                        conn.close()
-                    return results
-        except Exception as ex:
-            return f'Ошибка при удалении машины: {ex}'
-        finally:
-            if conn and conn.is_connected():
-                cursor.close()
-                conn.close()
-
-    def archive_car_info(self, car_id):
-        try:
-            conn = self.get_db_connection()
-            if conn and conn.is_connected():
-                cursor = conn.cursor()
-                query = f'select car_name, archive_date from archive join cars using(car_id) where car_id={car_id};'
-                cursor.execute(query)
-                results = cursor.fetchall()
-                if results:
-                    if conn and conn.is_connected():
-                        cursor.close()
-                        conn.close()
-                    return format_datetime_list(results)
-        except Exception as ex:
-            return f'Ошибка при добавлении заметки: {ex}'
-        finally:
-            if conn and conn.is_connected():
-                cursor.close()
-                conn.close()
 
 class Note(Table):
     """Класс для работы с таблицей notes"""
 
     def __init__(self):
         super().__init__('notes')
+
+    def get_notes_with_ids(self, car_id):
+        """Возвращает список записей с ID: [(id, note_text, username), ...]"""
+        try:
+            conn = self.get_db_connection()
+            cursor = conn.cursor()
+            cursor.execute(
+                "SELECT note_id, note, user_id FROM notes WHERE car_id = %s ORDER BY note_id",
+                (car_id,)
+            )
+            result = cursor.fetchall()
+            return result
+        except Error as e:
+            return f"Ошибка при получении записей: {e}"
+        finally:
+            if conn.is_connected():
+                cursor.close()
+                conn.close()
+
+    def update_note_text(self, note_id, new_text):
+        """Обновляет текст записи по ID"""
+        try:
+            conn = self.get_db_connection()
+
+            cursor = conn.cursor()
+            cursor.execute(
+                "UPDATE notes SET note = %s WHERE note_id = %s",
+                (new_text, note_id)
+            )
+            conn.commit()
+            return f"Запись #{note_id} успешно обновлена"
+        except Error as e:
+            return f"Ошибка при обновлении записи: {e}"
+        finally:
+            if conn.is_connected():
+                cursor.close()
+                conn.close()
+
+    def delete_note_by_id(self, note_id):
+        """Удаляет запись по ID"""
+        try:
+            conn = self.get_db_connection()
+
+            cursor = conn.cursor()
+            cursor.execute("DELETE FROM notes WHERE note_id = %s", (note_id,))
+            conn.commit()
+            return f"Запись #{note_id} успешно удалена"
+        except Error as e:
+            return f"Ошибка при удалении записи: {e}"
+        finally:
+            if conn.is_connected():
+                cursor.close()
+                conn.close()
 
     def add_note(self, note_text, car_id, user_id):
         """Добавляет новую заметку"""
@@ -320,53 +399,12 @@ class Note(Table):
                 cursor.close()
                 conn.close()
 
-#select car_id, car_name, archive_date from archive join cars using(car_id) where car_id=;
-def format_datetime_list(data:  list[tuple[str, datetime]],
-                         name_header: str = "Машина",
-                         date_header: str = "Дата",
-                         date_format: str = '%Y-%m-%d %H:%M:%S') -> str:
-    """
-    Форматирует список кортежей (имя, datetime) в красивую строку
 
-    Args:
-        data: Список кортежей [(name, datetime), ...]
-        name_header: Заголовок для колонки с именами
-        date_header: Заголовок для колонки с датами
-        date_format: Формат даты (по умолчанию: 'YYYY-MM-DD HH:MM:SS')
-
-    Returns:
-        Красиво отформатированная строка
-    """
-    if not data:
-        return "Нет данных для отображения"
-
-    # Определяем максимальную длину имени для красивого выравнивания
-    max_name_len = max(len(str(name)) for name, _ in data)
-    max_name_len = max(max_name_len, len(name_header))
-
-    # Создаем заголовок
-    header = f"{name_header:<{max_name_len}} | {date_header}"
-    # Создаем строки с данными
-    rows = []
-    for name, dt in data:
-        if isinstance(dt, datetime.datetime):
-            formatted_date = dt.strftime(date_format)
-        else:
-            formatted_date = str(dt)
-        rows.append(f"{str(name):<{max_name_len}} | {formatted_date}")
-
-    return "\n".join([header] + rows)
 # Пример использования
 if __name__ == '__main__':
     car = Car()
-    # note = Note()
-    # car.add_car('test_archive_2')
-    print(car.archive_car_info(21))
-    # car.move_car_to_archive(21)
-    # car.do_car_active_again(21)
-    # car.show_not_active_list()
-    # car.move_car_to_archive(19)
-    # car.show_not_active_list()
+    note = Note()
+    # print(car.edit_last_note(car_id=15, username='makarpreo', text='new text'))
     # cars.print_note(7)
     # cars.show_active_list()
     print('success')
