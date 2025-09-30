@@ -232,7 +232,7 @@ def select_archive_car_from_list(message):
     user_data = get_user_data(user_id)
 
     car = Car()
-    results = car.show_not_active_list()
+    results = car.show_archive()
 
     if isinstance(results, str):  # Если вернулась ошибка
         bot.send_message(message.chat.id, results)
@@ -246,12 +246,12 @@ def select_archive_car_from_list(message):
     markup = types.InlineKeyboardMarkup(row_width=1)
 
     for row in results:
-        car_id = row[0]  # ID машины
-        car_name = row[1] if len(row) > 1 else f"Машина {car_id}"  # Название
-
+        car_id = row[1]  # ID машины
+        car_name = row[0] if len(row) > 1 else f"Машина {car_id}"  # Название
+        date = str(row[2])[5:10]
         # Создаем кнопку для каждой машины
         btn_car = types.InlineKeyboardButton(
-            text=f"{car_name} (ID: {car_id})",
+            text=f"{car_name} {date[3]+date[4]}.{date[0]+date[1]} (ID: {car_id})",
             callback_data=f"select_archive_car:{car_id}"
         )
         markup.add(btn_car)

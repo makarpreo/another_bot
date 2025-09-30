@@ -59,11 +59,11 @@ class Car(Table):
         try:
             if conn and conn.is_connected():
                 cursor = conn.cursor()
-                query = "SELECT COUNT(*) FROM cars WHERE car_name = %s"
-                cursor.execute(query, (car_name,))
-                result = cursor.fetchone()
-                if result[0] > 0:
-                    return f'Ошибка при добавлении машины: машина с таким названием уже существует'
+                # query = "SELECT COUNT(*) FROM cars WHERE car_name = %s"
+                # cursor.execute(query, (car_name,))
+                # result = cursor.fetchone()
+                # if result[0] > 0:
+                #     return f'Ошибка при добавлении машины: машина с таким названием уже существует'
                 query = 'INSERT INTO cars (car_name, car_status) VALUES (%s, "active");'
                 cursor.execute(query, (car_name,))
                 conn.commit()
@@ -124,12 +124,12 @@ class Car(Table):
                 cursor.close()
                 conn.close()
 
-    def show_not_active_list(self):
+    def show_archive(self):
         try:
             conn = self.get_db_connection()
             if conn and conn.is_connected():
                 cursor = conn.cursor()
-                query = 'SELECT * FROM cars WHERE car_status="not active";'
+                query = 'SELECT car_name, car_id, archive_date FROM archive;'
                 cursor.execute(query)
                 results = cursor.fetchall()
                 print(results)
@@ -139,7 +139,7 @@ class Car(Table):
                         conn.close()
                     return results
         except Exception as ex:
-            return f'Ошибка при удалении машины: {ex}'
+            return f'Ошибка: {ex}'
         finally:
             if conn and conn.is_connected():
                 cursor.close()
@@ -261,7 +261,10 @@ class Car(Table):
                 query = f'UPDATE cars SET car_status="not active" WHERE car_id = {car_id};'
                 cursor.execute(query)
                 conn.commit()
-                query = f'INSERT INTO archive (car_id, archive_date) VALUES ({car_id}, NOW())'
+                query = f'select car_name from cars where car_id={car_id};'
+                cursor.execute(query)
+                car_name = cursor.fetchone()
+                query = f'INSERT INTO archive (car_id, archive_date, car_name) VALUES ({car_id}, NOW(), "{car_name[0]}")'
                 cursor.execute(query)
                 conn.commit()
                 return f'машина ID:{car_id} перемещена в архив'
