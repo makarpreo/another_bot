@@ -77,7 +77,7 @@ def show_main_menu(chat_id, user_data):
         text=" ", callback_data=' '
     )
     btn_archive = types.InlineKeyboardButton(
-        text="📁 Архив", callback_data='command:/archive'
+        text="📁 Архив", callback_data='/archive'
     )
     btn_move_archive = types.InlineKeyboardButton(
         text="🚗➡️📁 ТЕКУЩУЮ МАШИНУ В АРХИВ", callback_data='car_to_archive'
@@ -125,8 +125,8 @@ def handle_command_callback(call):
         ask_id(mock_message)
     elif command == '/select_car':
         select_car_from_list(mock_message)
-    elif command == '/archive':
-        select_archive_car_from_list(mock_message)
+    elif '/archive' in command:
+        show_archive_by_month(mock_message)
     elif command == '/add_note':
         ask_note(mock_message)
     elif command == '/print_notes':
@@ -167,22 +167,22 @@ def handle_car_selection(call):
     # Подтверждаем нажатие
     bot.answer_callback_query(call.id, f"Выбрана машина: {car_name}")
 
-
+@bot.message_handler(commands=['select_car'])
 @id_handler
-def select_car_from_list(message):
+def select_car_from_list(call):
     """Показать список машин для выбора"""
-    user_id = message.from_user.id
+    user_id = call.message.from_user.id
     user_data = get_user_data(user_id)
 
     car = Car()
     results = car.show_active_list()
 
     if isinstance(results, str):  # Если вернулась ошибка
-        bot.send_message(message.chat.id, results)
+        bot.send_message(call.message.chat.id, results)
         return
 
     if not results:
-        bot.send_message(message.chat.id, "Нет активных машин.")
+        bot.send_message(call.message.chat.id, "Нет активных машин.")
         return
 
     # Создаем inline клавиатуру с машинами
@@ -200,7 +200,7 @@ def select_car_from_list(message):
         markup.add(btn_car)
 
     bot.send_message(
-        message.chat.id,
+        call.message.chat.id,
         "📋 <b>Выберите машину для работы:</b>\n\n"
         f"Текущая машина: ID {user_data['current_car_id']}",
         parse_mode='HTML',
@@ -254,22 +254,41 @@ def car_to_archive(message):
         markup.add(types.InlineKeyboardButton(text="🔢 Выбрать машину", callback_data="command:/select_car"))
         bot.send_message(message.chat.id, f'Вы отменили перемещение в архив машины ID:{user_data["current_car_id"]}')
 
+@bot.callback_query_handler(func=lambda call: call.data == '/archive')
+def show_archive_by_month(call):
+    markup = InlineKeyboardMarkup()
+    markup.add(
+    types.InlineKeyboardButton(text="Январь", callback_data="/archive:1"),
+    types.InlineKeyboardButton(text="Февраль", callback_data="/archive:2"),
+    types.InlineKeyboardButton(text="Март", callback_data="/archive:3"),
+    types.InlineKeyboardButton(text="Апрель", callback_data="/archive:4"),
+    types.InlineKeyboardButton(text="Май", callback_data="/archive:5"),
+    types.InlineKeyboardButton(text="Июнь", callback_data="/archive:6"),
+    types.InlineKeyboardButton(text="Июль", callback_data="/archive:7"),
+    types.InlineKeyboardButton(text="Август", callback_data="/archive:8"),
+    types.InlineKeyboardButton(text="Сентябрь", callback_data="/archive:9"),
+    types.InlineKeyboardButton(text="Октябрь", callback_data="/archive:10"),
+    types.InlineKeyboardButton(text="Ноябрь", callback_data="/archive:11"),
+    types.InlineKeyboardButton(text="Декабрь", callback_data="/archive:12"),)
+    bot.send_message(chat_id=call.from_user.id, text='Выберите месяц', reply_markup=markup)
 
+@bot.callback_query_handler(func=lambda call: call.data.startswith('/archive:'))
 @id_handler
-def select_archive_car_from_list(message):
+def select_archive_car_from_list(call):
     """Показать список машин для выбора"""
-    user_id = message.from_user.id
+    user_id = call.from_user.id
     user_data = get_user_data(user_id)
+    month = int(call.data.split(':')[1])
 
     car = Car()
-    results = car.show_archive()
+    results = car.show_archive_by_month(month)
 
     if isinstance(results, str):  # Если вернулась ошибка
-        bot.send_message(message.chat.id, results)
+        bot.send_message(call.message.chat.id, results)
         return
 
     if not results:
-        bot.send_message(message.chat.id, "Нет машин в архиве.")
+        bot.send_message(call.message.chat.id, "Нет машин в архиве.")
         return
 
     # Создаем inline клавиатуру с машинами
@@ -287,7 +306,7 @@ def select_archive_car_from_list(message):
         markup.add(btn_car)
 
     bot.send_message(
-        message.chat.id,
+        call.message.chat.id,
         "📋 <b>Архив</b>\n\n"
         f"Выберите машину для справки",
         parse_mode='HTML',
@@ -359,11 +378,10 @@ def set_id(message):
         bot.send_message(message.chat.id, "❌ Операция отменена. Введите числовой ID.")
 
 
-@bot.message_handler(commands=['select_car'])
-@id_handler
-def select_car_command(message):
-    """Обработчик команды /select_car"""
-    select_car_from_list(message)
+# @id_handler
+# def select_car_command(message):
+#     """Обработчик команды /select_car"""
+#     select_car_from_list(message)
 
 
 @bot.message_handler(commands=['create_car'])

@@ -145,6 +145,27 @@ class Car(Table):
                 cursor.close()
                 conn.close()
 
+    def show_archive_by_month(self, month):
+        try:
+            conn = self.get_db_connection()
+            if conn and conn.is_connected():
+                cursor = conn.cursor()
+                query = 'SELECT car_name, car_id, archive_date FROM archive WHERE MONTH(archive_date) = %s;'
+                cursor.execute(query, params=(month, ))
+                results = cursor.fetchall()
+                print(results)
+                if results:
+                    if conn and conn.is_connected():
+                        cursor.close()
+                        conn.close()
+                    return results
+        except Exception as ex:
+            return f'Ошибка: {ex}'
+        finally:
+            if conn and conn.is_connected():
+                cursor.close()
+                conn.close()
+
     def delete_car_by_id(self, car_id):
         """Удаляет машину по ID"""
         try:
