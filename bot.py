@@ -169,20 +169,20 @@ def handle_car_selection(call):
 
 @bot.message_handler(commands=['select_car'])
 @id_handler
-def select_car_from_list(call):
+def select_car_from_list(message):
     """Показать список машин для выбора"""
-    user_id = call.message.from_user.id
+    user_id = message.from_user.id
     user_data = get_user_data(user_id)
 
     car = Car()
     results = car.show_active_list()
 
     if isinstance(results, str):  # Если вернулась ошибка
-        bot.send_message(call.message.chat.id, results)
+        bot.send_message(message.chat.id, results)
         return
 
     if not results:
-        bot.send_message(call.message.chat.id, "Нет активных машин.")
+        bot.send_message(message.chat.id, "Нет активных машин.")
         return
 
     # Создаем inline клавиатуру с машинами
@@ -200,7 +200,7 @@ def select_car_from_list(call):
         markup.add(btn_car)
 
     bot.send_message(
-        call.message.chat.id,
+        message.chat.id,
         "📋 <b>Выберите машину для работы:</b>\n\n"
         f"Текущая машина: ID {user_data['current_car_id']}",
         parse_mode='HTML',
@@ -762,7 +762,7 @@ def print_notes_for_archive_car(user_id):
 
     name = car.get_car_name(user_data['current_car_id'])
     data = []
-    summary = f'{archive_result}\n\n{name}\n'
+    summary = f''
 
     for n, i in result:
         data.append((i, n))
